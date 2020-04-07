@@ -11,9 +11,15 @@ describe OodPortalGenerator::Application do
     Tempfile.new('apache')
   end
 
+  let(:dex_config) do
+    Tempfile.new('dex.yaml')
+  end
+
   before(:each) do
     stub_const('ARGV', [])
     allow(described_class).to receive(:sum_path).and_return(sum_path.path)
+    allow(described_class).to receive(:dex_config).and_return(dex_config.path)
+    allow(OodPortalGenerator).to receive(:fqdn).and_return('example.com')
   end
 
   after(:each) do
@@ -50,6 +56,40 @@ describe OodPortalGenerator::Application do
       expected_rendered = read_fixture('ood-portal.conf.maint_with_ips')
       expect(described_class.output).to receive(:write).with(expected_rendered)
       described_class.generate()
+    end
+
+    context 'dex' do
+      before(:each) do
+        allow(OodPortalGenerator::Dex).to receive(:installed?).and_return(true)
+        allow_any_instance_of(OodPortalGenerator::Dex).to receive(:enabled?).and_return(true)
+      end
+
+      it 'generates default dex configs' do
+        expected_rendered = read_fixture('ood-portal.conf.dex')
+        expect(described_class.output).to receive(:write).with(expected_rendered)
+        described_class.generate()
+        dex_yaml = File.read(dex_config.path)
+        expected_dex_yaml = read_fixture('dex.yaml.default')
+        expect(dex_yaml).to eq(expected_dex_yaml)
+      end
+
+      it 'generates full dex configs with SSL' do
+        allow(described_class).to receive(:context).and_return({
+          servername: 'example.com',
+          port: '443',
+          ssl: [
+            'SSLCertificateFile /etc/pki/tls/certs/example.com.crt',
+            'SSLCertificateKeyFile /etc/pki/tls/private/example.com.key',
+            'SSLCertificateChainFile /etc/pki/tls/certs/example.com-interm.crt',
+          ],
+        })
+        expected_rendered = read_fixture('ood-portal.conf.dex-full')
+        expect(described_class.output).to receive(:write).with(expected_rendered)
+        described_class.generate()
+        dex_yaml = File.read(dex_config.path)
+        expected_dex_yaml = read_fixture('dex.yaml.full')
+        expect(dex_yaml).to eq(expected_dex_yaml)
+      end
     end
   end
 

@@ -1,9 +1,11 @@
 require "dotenv"
 require "pathname"
+require "socket"
 
 require "ood_portal_generator/version"
 require "ood_portal_generator/application"
 require "ood_portal_generator/view"
+require "ood_portal_generator/dex"
 
 # The main namespace for ood_portal_generator
 module OodPortalGenerator
@@ -25,6 +27,10 @@ module OodPortalGenerator
       env = Dotenv.parse(os_release_file)
       return false if ("#{env['ID']} #{env['ID_LIKE']}" =~ /rhel/ && env['VERSION_ID'] =~ /^8/)
       true
+    end
+
+    def fqdn
+      Socket.gethostbyname(Socket.gethostname).first
     end
   end
 end

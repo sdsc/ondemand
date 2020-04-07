@@ -15,6 +15,12 @@ module OodPortalGenerator
         Pathname.new(@config || ENV['CONFIG'] || "/etc/ood/config/ood_portal.yml")
       end
 
+      # The configuration file for Dex
+      # @return [Pathname] path to Dex config
+      def dex_config
+        Pathname.new(@dex_config || ENV['DEX_CONFIG'] || "/etc/ood/dex/config.yaml")
+      end
+
       # The erb template file that will be rendered
       # @return [Pathname] path to erb template
       def template
@@ -126,8 +132,12 @@ module OodPortalGenerator
 
       def generate()
         view = View.new(context)
+        dex = Dex.new(context, view)
         rendered_template = view.render(template.read)
         output.write(rendered_template)
+        if Dex.installed? && dex.enabled?
+          File.open(dex_config, "w") { |file| file.write(dex.render) }
+        end
       end
 
       def update_ood_portal()
@@ -226,6 +236,10 @@ module OodPortalGenerator
       def add_generate_opt_parser_attrs(parser)
         parser.on("-o", "--output OUTPUT", String, "File that rendered template is output to") do |v|
           @output = v
+        end
+
+        parser.on("-d", "--dex OUTPUT", String, "File that rendered Dex config is output to") do |v|
+          @dex_config = v
         end
       end
 

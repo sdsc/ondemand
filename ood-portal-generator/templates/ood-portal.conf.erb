@@ -97,6 +97,21 @@ Listen <%= addr_port %>
   <%- end -%>
   <%- end -%>
 
+  <%- if @oidc_uri -%>
+  # OIDC configuration
+  #
+  OIDCProviderMetadataURL <%= @oidc_provider_metadata_url %>
+  OIDCClientID <%= @oidc_client_id %>
+  OIDCRedirectURI <%= @oidc_redirect_uri %>
+  OIDCRemoteUserClaim <%= @oidc_remote_user_claim %>
+  OIDCClientSecret <%= @oidc_client_secret %>
+  OIDCCryptoPassphrase <%= @oidc_crypto_passphrase %>
+  OIDCSessionInactivityTimeout <%= @oidc_session_inactivity_timeout %>
+  <%- @oidc_settings.keys.sort do |oidc_setting| -%>
+  <%= oidc_setting %> <%= @oidc_settings[oidc_setting] %>
+  <%- end -%>
+
+  <%- end -%>
   # Lua configuration
   #
   <%- if @lua_root -%>
