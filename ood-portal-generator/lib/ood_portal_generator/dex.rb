@@ -75,6 +75,7 @@ module OodPortalGenerator
       }]
       connectors = config.fetch(:connectors, nil)
       @dex_config[:connectors] = connectors unless connectors.nil?
+      @dex_config[:oauth2] = { skipApprovalScreen: true }
       @dex_config[:enablePasswordDB] = connectors.nil?
       if connectors.nil?
         @dex_config[:staticPasswords] = [{
