@@ -32,12 +32,6 @@ module OodPortalGenerator
       @use_maintenance          = opts.fetch(:use_maintenance, true)
       @maintenance_ip_whitelist = Array(opts.fetch(:maintenance_ip_whitelist, []))
 
-      if OodPortalGenerator.scl_apache?
-        default_htpasswd = "/opt/rh/httpd24/root/etc/httpd/.htpasswd"
-      else
-        default_htpasswd = "/etc/httpd/.htpasswd"
-      end
-
       # Portal authentication
       @auth = opts.fetch(:auth, [
         %q{AuthType openid-connect},
