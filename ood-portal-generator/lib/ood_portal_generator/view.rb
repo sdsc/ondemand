@@ -87,6 +87,7 @@ module OodPortalGenerator
       @oidc_redirect_uri                = "#{protocol}#{servername}#{@oidc_uri}"
       @oidc_remote_user_claim           = opts.fetch(:oidc_remote_user_claim, nil)
       @oidc_client_secret               = opts.fetch(:oidc_client_secret, nil)
+      @oidc_scope                       = opts.fetch(:oidc_scope, "openid profile email")
       @oidc_crypto_passphrase           = Digest::SHA1.hexdigest(servername)
       @oidc_session_inactivity_timeout  = opts.fetch(:oidc_session_inactivity_timeout, 28800)
       @oidc_settings                    = opts.fetch(:oidc_settings, {})

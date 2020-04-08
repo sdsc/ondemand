@@ -105,6 +105,7 @@ Listen <%= addr_port %>
   OIDCRedirectURI <%= @oidc_redirect_uri %>
   OIDCRemoteUserClaim <%= @oidc_remote_user_claim %>
   OIDCClientSecret <%= @oidc_client_secret %>
+  OIDCScope "<%= @oidc_scope %>"
   OIDCCryptoPassphrase <%= @oidc_crypto_passphrase %>
   OIDCSessionInactivityTimeout <%= @oidc_session_inactivity_timeout %>
   <%- @oidc_settings.keys.sort do |oidc_setting| -%>
