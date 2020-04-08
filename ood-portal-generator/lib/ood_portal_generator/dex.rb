@@ -87,7 +87,7 @@ module OodPortalGenerator
       if enabled? && self.class.installed?
         view.oidc_uri = '/oidc'
         view.oidc_redirect_uri = client_redirect_uri
-        view.oidc_provider_metadata_url = "#{@dex_config[:issuer]}/dex/.well-known/openid-configuration"
+        view.oidc_provider_metadata_url = "#{@dex_config[:issuer]}/.well-known/openid-configuration"
         view.oidc_client_id = client_id
         view.oidc_remote_user_claim = 'preferred_username'
         view.oidc_client_secret = client_secret
