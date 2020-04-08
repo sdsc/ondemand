@@ -30,8 +30,8 @@ module OodPortalGenerator
       }
       @dex_config[:web] = {
         http: "0.0.0.0:#{http_port}",
-        https: "0.0.0.0:#{https_port}",
       }
+      @dex_config[:web][:https] = "0.0.0.0:#{https_port}" if ssl
       tls_cert = config.fetch(:tls_cert, nil)
       tls_key = config.fetch(:tls_key, nil)
       if ssl && ! view.ssl.nil? && tls_cert.nil? && tls_key.nil?
