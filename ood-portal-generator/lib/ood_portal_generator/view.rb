@@ -92,6 +92,9 @@ module OodPortalGenerator
       @oidc_crypto_passphrase           = Digest::SHA1.hexdigest(servername)
       @oidc_session_inactivity_timeout  = opts.fetch(:oidc_session_inactivity_timeout, 28800)
       @oidc_settings                    = opts.fetch(:oidc_settings, {})
+      if @oidc_remote_user_claim == 'email'
+        @user_map_cmd = "/opt/ood/ood_auth_map/bin/ood_auth_map.regex --regex='^([^@]+)@.*$'"
+      end
     end
 
     # Helper method to escape IP for maintenance rewrite condition
