@@ -92,6 +92,7 @@ module OodPortalGenerator
         view.oidc_client_id = client_id
         view.oidc_remote_user_claim = 'email' if connectors.nil?
         view.oidc_client_secret = client_secret
+        view.logout_redirect = "/oidc?logout=#{client_protocol}#{client_id}#{client_port}".gsub('://', '%3A%2F%2F')
       end
     end
 
