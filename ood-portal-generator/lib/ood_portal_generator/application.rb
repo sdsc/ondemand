@@ -141,11 +141,9 @@ module OodPortalGenerator
       def generate()
         view = View.new(context)
         dex = Dex.new(context, view)
-        @dex = false
         rendered_template = view.render(template.read)
         output.write(rendered_template)
         if Dex.installed? && dex.enabled?
-          @dex = true
           dex_output.write(dex.render)
         end
       end
@@ -191,7 +189,7 @@ module OodPortalGenerator
           puts "No change in Apache config."
         end
 
-        if @dex && ! files_identical?(new_dex_config.path, dex_config)
+        if ! File.zero?(new_dex_config.path) && ! files_identical?(new_dex_config.path, dex_config)
           dex_changed = true
           if File.exist?(dex_config)
             puts "Backing up previous Dex config to: '#{dex_config_bak}'"
