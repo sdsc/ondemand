@@ -114,7 +114,7 @@ module OodPortalGenerator
     end
 
     def self.installed?
-      File.directory?('/etc/ood/dex') && File.executable?('/usr/local/bin/ondemand-dex')
+      File.directory?(config_dir) && File.executable?('/usr/local/bin/ondemand-dex')
     end
 
     def self.config_dir
