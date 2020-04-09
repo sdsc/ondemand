@@ -120,6 +120,50 @@ describe OodPortalGenerator::Application do
         expect(File.exists?(File.join(config_dir, 'key'))).to eq(true)
         expect(File.read(File.join(config_dir, 'key'))).to eq('KEY')
       end
+
+      it 'generates LDAP dex configs with SSL' do
+        allow(described_class).to receive(:context).and_return({
+          servername: 'example.com',
+          port: '443',
+          ssl: [
+            'SSLCertificateFile /etc/pki/tls/certs/example.com.crt',
+            'SSLCertificateKeyFile /etc/pki/tls/private/example.com.key',
+            'SSLCertificateChainFile /etc/pki/tls/certs/example.com-interm.crt',
+          ],
+          dex: {
+            connectors: [{
+              type: 'ldap',
+              id: 'ldap',
+              name: 'LDAP',
+              config: {
+                host: 'ldap1.example.com:636',
+                bindDN: 'cn=read,dc=example,dc=com',
+                bindPW: 'secret',
+                userSearch: {
+                  baseDN: 'ou=People,dc=example,dc=com',
+                  filter: "(objectClass=posixAccount)",
+                  username: 'uid',
+                  idAttr: 'uid',
+                  emailAttr: 'mail',
+                  nameAttr: 'gecos',
+                  preferredUsernameAttr: 'uid',
+                },
+                groupSearch: {
+                  baseDN: 'ou=Groups,dc=example,dc=com',
+                  filter: "(objectClass=posixGroup)",
+                  userMatchers: [{userAttr: 'dn', groupAttr: 'member'}],
+                  nameAttr: 'cn',
+                },
+              },
+            }]
+          }
+        })
+        expected_rendered = read_fixture('ood-portal.conf.dex-full').gsub('OIDCRemoteUserClaim email', 'OIDCRemoteUserClaim preferred_username')
+        expect(described_class.output).to receive(:write).with(expected_rendered)
+        expected_dex_yaml = read_fixture('dex.yaml.ldap').gsub('/etc/ood/dex', config_dir)
+        expect(described_class.dex_output).to receive(:write).with(expected_dex_yaml)
+        described_class.generate()
+      end
     end
   end
 
