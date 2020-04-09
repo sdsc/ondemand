@@ -26,7 +26,7 @@ module OodPortalGenerator
       @dex_config[:issuer] = "#{protocol}#{servername}:#{port}"
       @dex_config[:storage] = {
         type: 'sqlite3',
-        config: { file: config.fetch(:storage_file, '/etc/ood/dex/dex.db') },
+        config: { file: config.fetch(:storage_file, File.join(self.class.config_dir, 'dex.db')) },
       }
       @dex_config[:web] = {
         http: "0.0.0.0:#{http_port}",
@@ -39,7 +39,7 @@ module OodPortalGenerator
           items = ssl_line.split(' ', 2)
           next unless items.size == 2
           value = items[1].gsub(/"|'/, '')
-          newpath = File.join('/etc/ood/dex', File.basename(value))
+          newpath = File.join(self.class.config_dir, File.basename(value))
           case items[0].downcase
           when 'sslcertificatefile'
             tls_cert = newpath
@@ -115,6 +115,10 @@ module OodPortalGenerator
 
     def self.installed?
       File.directory?('/etc/ood/dex') && File.executable?('/usr/local/bin/ondemand-dex')
+    end
+
+    def self.config_dir
+      '/etc/ood/dex'
     end
   end
 end
