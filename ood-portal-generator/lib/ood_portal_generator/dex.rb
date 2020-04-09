@@ -56,6 +56,10 @@ module OodPortalGenerator
       end
       @dex_config[:web][:tlsCert] = tls_cert unless tls_cert.nil?
       @dex_config[:web][:tlsKey] = tls_key unless tls_key.nil?
+      grpc = config.fetch(:grpc, nil)
+      @dex_config[:grpc] = grpc unless grpc.nil?
+      expiry = config.fetch(:expiry, nil)
+      @dex_config[:expiry] = expiry unless expiry.nil?
       @dex_config[:telemetry] = { http: '0.0.0.0:5558' }
       client_protocol = view.protocol
       if view.port && ['443','80'].include?(view.port.to_s)
@@ -85,6 +89,8 @@ module OodPortalGenerator
           userID: '08a8684b-db88-4b73-90a9-3cd1661f5466',
         }]
       end
+      frontend = config.fetch(:frontend, nil)
+      @dex_config[:frontend] = frontend unless frontend.nil?
       if enabled? && self.class.installed?
         view.oidc_uri = '/oidc'
         view.oidc_redirect_uri = client_redirect_uri
