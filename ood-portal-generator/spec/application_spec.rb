@@ -59,18 +59,27 @@ describe OodPortalGenerator::Application do
     end
 
     context 'dex' do
+      let(:config_dir) do
+        Dir.mktmpdir
+      end
       before(:each) do
         allow(OodPortalGenerator::Dex).to receive(:installed?).and_return(true)
+        allow(OodPortalGenerator::Dex).to receive(:config_dir).and_return(config_dir)
         allow_any_instance_of(OodPortalGenerator::Dex).to receive(:enabled?).and_return(true)
+        user = Etc.getlogin
+        gid = Etc.getpwnam(user).gid
+        group = Etc.getgrgid(gid).name
+        allow(OodPortalGenerator).to receive(:dex_user).and_return(user)
+        allow(OodPortalGenerator).to receive(:dex_group).and_return(group)
+        allow(described_class).to receive(:dex_output).and_return(dex_config)
       end
 
       it 'generates default dex configs' do
         expected_rendered = read_fixture('ood-portal.conf.dex')
         expect(described_class.output).to receive(:write).with(expected_rendered)
+        expected_dex_yaml = read_fixture('dex.yaml.default').gsub('/etc/ood/dex', config_dir)
+        expect(described_class.dex_output).to receive(:write).with(expected_dex_yaml)
         described_class.generate()
-        dex_yaml = File.read(dex_config.path)
-        expected_dex_yaml = read_fixture('dex.yaml.default')
-        expect(dex_yaml).to eq(expected_dex_yaml)
       end
 
       it 'generates full dex configs with SSL' do
@@ -85,10 +94,31 @@ describe OodPortalGenerator::Application do
         })
         expected_rendered = read_fixture('ood-portal.conf.dex-full')
         expect(described_class.output).to receive(:write).with(expected_rendered)
+        expected_dex_yaml = read_fixture('dex.yaml.full').gsub('/etc/ood/dex', config_dir)
+        expect(described_class.dex_output).to receive(:write).with(expected_dex_yaml)
         described_class.generate()
-        dex_yaml = File.read(dex_config.path)
-        expected_dex_yaml = read_fixture('dex.yaml.full')
-        expect(dex_yaml).to eq(expected_dex_yaml)
+      end
+
+      it 'generates copies SSL certs' do
+        certdir = Dir.mktmpdir
+        cert = File.join(certdir, 'cert')
+        File.open(cert, 'w') { |f| f.write("CERT") }
+        key = File.join(certdir, 'key')
+        File.open(key, 'w') { |f| f.write("KEY") }
+        allow(described_class).to receive(:context).and_return({
+          servername: 'example.com',
+          port: '443',
+          ssl: [
+            "SSLCertificateFile #{cert}",
+            "SSLCertificateKeyFile #{key}",
+            'SSLCertificateChainFile /etc/pki/tls/certs/example.com-interm.crt',
+          ],
+        })
+        described_class.generate()
+        expect(File.exists?(File.join(config_dir, 'cert'))).to eq(true)
+        expect(File.read(File.join(config_dir, 'cert'))).to eq('CERT')
+        expect(File.exists?(File.join(config_dir, 'key'))).to eq(true)
+        expect(File.read(File.join(config_dir, 'key'))).to eq('KEY')
       end
     end
   end
