@@ -50,7 +50,7 @@ module OodPortalGenerator
           end
           if File.exists?(value)
             FileUtils.cp(value, newpath, preserve: true, verbose: true)
-            FileUtils.chown('ondemand-dex', 'ondemand-dex', newpath, verbose: true)
+            FileUtils.chown(OodPortalGenerator.dex_user, OodPortalGenerator.dex_group, newpath, verbose: true)
           end
         end
       end

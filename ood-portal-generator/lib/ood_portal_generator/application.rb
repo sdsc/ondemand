@@ -15,12 +15,6 @@ module OodPortalGenerator
         Pathname.new(@config || ENV['CONFIG'] || "/etc/ood/config/ood_portal.yml")
       end
 
-      # The configuration file for Dex
-      # @return [Pathname] path to Dex config
-      def dex_config
-        Pathname.new(@dex_config || ENV['DEX_CONFIG'] || "/etc/ood/dex/config.yaml")
-      end
-
       # The erb template file that will be rendered
       # @return [Pathname] path to erb template
       def template
@@ -31,6 +25,12 @@ module OodPortalGenerator
       # @return [Pathname, IO] io object where rendered output is written to
       def output
         @output ? Pathname.new(@output) : $stdout
+      end
+
+      # The io object that rendered dex config will be written to
+      # @return [Pathname, IO] io object where rendered config is written to
+      def dex_output
+        @dex_output ? Pathname.new(@dex_output) : $stderr
       end
 
       # The context used to render the template
@@ -77,6 +77,14 @@ module OodPortalGenerator
 
       def sum_path
         ENV['SUM'] || '/etc/ood/config/ood_portal.sha256sum'
+      end
+
+      def dex_config
+        ENV['DEX_CONFIG'] || "/etc/ood/dex/config.yaml"
+      end
+
+      def dex_config_bak
+        "#{dex_config}.#{Time.now.strftime('%Y%m%dT%H%M%S')}"
       end
 
       # return string contents of file without comments
@@ -133,18 +141,23 @@ module OodPortalGenerator
       def generate()
         view = View.new(context)
         dex = Dex.new(context, view)
+        @dex = false
         rendered_template = view.render(template.read)
         output.write(rendered_template)
         if Dex.installed? && dex.enabled?
-          File.open(dex_config, "w") { |file| file.write(dex.render) }
+          @dex = true
+          dex_output.write(dex.render)
         end
       end
 
       def update_ood_portal()
         ret = 0
         changed = false
+        dex_changed = false
         new_apache = Tempfile.new('new_apache')
         @output = new_apache.path
+        new_dex_config = Tempfile.new('dex_config')
+        @dex_output = new_dex_config.path
         generate()
 
         # Create checksum file if the path to ood-portal.conf not in checksum file
@@ -178,6 +191,20 @@ module OodPortalGenerator
           puts "No change in Apache config."
         end
 
+        if @dex && ! files_identical?(new_dex_config.path, dex_config)
+          dex_changed = true
+          if File.exist?(dex_config)
+            puts "Backing up previous Dex config to: '#{dex_config_bak}'"
+            FileUtils.mv(dex_config, dex_config_bak, verbose: true)
+          end
+          puts "Generating new Dex config at: #{dex_config}"
+          FileUtils.mv(new_dex_config.path, dex_config, verbose: true)
+          FileUtils.chown(OodPortalGenerator.dex_user, OodPortalGenerator.dex_group, dex_config, verbose: true)
+          FileUtils.chmod(0600, dex_config, verbose: true)
+        else
+          puts "No change in the Dex config."
+        end
+
         new_apache.unlink
 
         if rpm || ! replace
@@ -191,6 +218,15 @@ module OodPortalGenerator
           puts ""
           puts "Suggested command:"
           puts "    sudo systemctl try-restart #{apache_services[0]}.service #{apache_services[1]}.service"
+          puts ""
+        end
+
+        if dex_changed
+          puts ""
+          puts "Restart the ondemand-dex service now."
+          puts ""
+          puts "Suggested command:"
+          puts "    sudo systemctl restart ondemand-dex.service"
           puts ""
         end
 
@@ -239,7 +275,7 @@ module OodPortalGenerator
         end
 
         parser.on("-d", "--dex OUTPUT", String, "File that rendered Dex config is output to") do |v|
-          @dex_config = v
+          @dex_output = v
         end
       end
 

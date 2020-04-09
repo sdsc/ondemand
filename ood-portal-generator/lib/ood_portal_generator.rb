@@ -1,4 +1,5 @@
 require "dotenv"
+require "etc"
 require "pathname"
 require "socket"
 
@@ -31,6 +32,22 @@ module OodPortalGenerator
 
     def fqdn
       Socket.gethostbyname(Socket.gethostname).first
+    end
+
+    def dex_user
+      Etc.getpwnam('ondemand-dex')
+      'ondemand-dex'
+    rescue ArgumentError
+      Etc.getlogin
+    end
+
+    def dex_group
+      Etc.getgrnam('ondemand-dex')
+      'ondemand-dex'
+    rescue ArgumentError
+      user = Etc.getlogin
+      gid = Etc.getpwnam(user).gid
+      Etc.getgrgid(gid).name
     end
   end
 end
