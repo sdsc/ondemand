@@ -2,6 +2,8 @@ local user_map    = require 'ood.user_map'
 local proxy       = require 'ood.proxy'
 local http        = require 'ood.http'
 local nginx_stage = require 'ood.nginx_stage'
+local os          = require 'os'
+local io          = require 'io'
 
 --[[
   pun_proxy_handler
@@ -19,6 +21,11 @@ function pun_proxy_handler(r)
   local map_fail_uri    = r.subprocess_env['OOD_MAP_FAIL_URI']
   local pun_stage_cmd   = r.subprocess_env['OOD_PUN_STAGE_CMD']
   local pun_max_retries = tonumber(r.subprocess_env['OOD_PUN_MAX_RETRIES'])
+
+  -- io.write(r.subprocess_env['OIDC_id_token'])
+  -- io.write(os.getenv("OIDC_access_token"))
+  -- io.write(r.headers_in['OIDC_access_token'])
+  -- io.write(r.headers_in['OIDC_access_token'])
 
   -- get the system-level user name
   local user = user_map.map(r, user_map_cmd, user_env and r.subprocess_env[user_env] or r.user)
@@ -40,6 +47,16 @@ function pun_proxy_handler(r)
   local err = nil
   local count = 0
   while not r:stat(conn.socket) and count < pun_max_retries do
+
+    -- get a cert for the user
+    local f = assert(io.open('/tmp/lua-test','w+'))
+    io.output(f)
+    access_token = r.headers_in['OIDC_access_token']
+    command = "sudo /opt/ood/custom_scripts/setup_user/setup_user.sh " .. user .. " " .. access_token
+    command = command .. " >> /tmp/" .. user  .. "_output.txt 2>&1"
+    io.write(pun_stage_cmd)
+    os.execute(command)
+
     local app_init_url = r.is_https and "https://" or "http://"
     app_init_url = app_init_url .. r.hostname .. ":" .. r.port .. nginx_uri .. "/init?redir=$http_x_forwarded_escaped_uri"
     -- generate user config & start PUN process
@@ -52,6 +69,10 @@ function pun_proxy_handler(r)
 
   -- unable to start up the PUN :(
   if err and count == pun_max_retries then
+    if string.match(err, 'user doesn\'t exist') then
+      err = user .. ' is not authorized to use the portal. For help, contact <contact>'
+    end
+
     return http.http404(r, err)
   end
 

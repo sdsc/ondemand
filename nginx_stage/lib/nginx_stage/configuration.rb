@@ -394,7 +394,8 @@ module NginxStage
       self.template_root         = "#{root}/templates"
 
       self.proxy_user       = 'apache'
-      self.nginx_bin        = '/opt/ood/ondemand/root/usr/sbin/nginx'
+      self.nginx_bin        = '/opt/ood/custom_scripts/nginx_stage_wrapper.sh'
+      #self.nginx_bin        = '/opt/ood/ondemand/root/usr/sbin/nginx'
       self.nginx_signals    = %i(stop quit reopen reload)
       self.mime_types_path  = '/opt/ood/ondemand/root/etc/nginx/mime.types'
 

@@ -19,8 +19,18 @@ if [[ -f "${NGINX_PROFILE}" ]]; then
   source "${NGINX_PROFILE}"
 fi
 
+# fill in the blanks
+export X509_USER_CERT="....."
+export X509_USER_KEY="....."
+
+# call script to fetch cert here
+
 # Environment is set, so call Ruby now
 #
+
+#(tail --pid=$$ -f /dev/null; touch /tmp/done) &
+#{ while kill -0 $$; do sleep 5; done; touch /tmp/done; } &
+
 exec \
   /usr/bin/env ruby \
     -I"${ROOT_DIR}/lib" \
