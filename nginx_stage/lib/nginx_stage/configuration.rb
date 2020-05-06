@@ -358,6 +358,11 @@ module NginxStage
     # @return [String] path to the custom html root
     attr_accessor :pun_custom_html_root
 
+    # If set, absolute path to the jail directory to run
+    # puns from.
+    attr_accessor :pun_jail_dir
+    attr_accessor :pun_jail_pid
+    
     #
     # Configuration module
     #
@@ -411,9 +416,9 @@ module NginxStage
       self.pun_config_path     = '/var/lib/ondemand-nginx/config/puns/%{user}.conf'
       self.pun_secret_key_base_path = '/var/lib/ondemand-nginx/config/puns/%{user}.secret_key_base.txt'
 
-      self.pun_tmp_root        = '/var/tmp/ondemand-nginx/%{user}'
-      self.pun_access_log_path = '/var/log/ondemand-nginx/%{user}/access.log'
-      self.pun_error_log_path  = '/var/log/ondemand-nginx/%{user}/error.log'
+      self.pun_tmp_root        = '/var/tmp/ondemand-nginx-dev/%{user}'
+      self.pun_access_log_path = '/var/tmp/ondemand-nginx-dev-log/%{user}/access.log'
+      self.pun_error_log_path  = '/var/tmp/ondemand-nginx-dev-log/%{user}/error.log'
       self.pun_pid_path        = '/var/run/ondemand-nginx/%{user}/passenger.pid'
       self.pun_socket_path     = '/var/run/ondemand-nginx/%{user}/passenger.sock'
       self.pun_sendfile_root   = '/'
@@ -423,7 +428,7 @@ module NginxStage
         {env: :usr, owner: '*',       name: '*'},
         {env: :sys, owner: '',        name: '*'}
       ]
-
+      self.pun_jail_dir      =  '/fakeroot'
       self.app_config_path   = {
         dev: '/var/lib/ondemand-nginx/config/apps/dev/%{owner}/%{name}.conf',
         usr: '/var/lib/ondemand-nginx/config/apps/usr/%{owner}/%{name}.conf',

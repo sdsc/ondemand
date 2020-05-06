@@ -120,6 +120,64 @@ module NginxStage
       FileUtils.mkdir_p destination, mode: mode
     end
 
+    # Create a new namespace
+    # @param user [User] A user object
+    # @return [Integer] PID of the process leader in the new namespace
+    def create_namespace(uid)
+      this_dir = File.dirname(__FILE__)
+      custom_ns_dir = File.expand_path("#{this_dir}/../../../custom_scripts/ns")
+      IO.popen([
+        "sudo",
+        "-g", "##{user.uid}",
+        "-u", "##{user.uid}",
+        "--",
+        "#{custom_ns_dir}/create_ns.sh",
+        "#{NginxStage.pun_jail_dir}"]) {|r|
+          ppid = r.readline.strip
+          r.close
+          return ppid
+      } 
+    end
+
+    # Recursively assign (change ownership) of directory so it can be
+    # owned by a namespace
+    # @param ppid [Integer] PID of the process leader in the namespace
+    # @param target [String] Directory or file to assign ownership to
+    def assign_to_namespace(ppid, target)
+      this_dir = File.dirname(__FILE__)
+      custom_ns_dir = File.expand_path("#{this_dir}/../../../custom_scripts/ns")
+      IO.popen([
+        "#{custom_ns_dir}/assign_to_ns.sh",
+        ppid,
+        target]) {|r|
+          outstr = r.read
+          r.close
+          abort(outstr) if $?.to_i != 0
+      }
+      return nil
+    end
+
+    # Execute a command in a namespace, don't wait for it to return.
+    # @param ppid [Integer] PID of the process leader in the namespace
+    # @param cmd [String] Command to run
+    # @param args [String array] args to cmd
+    def enter_namespace(ppid, cmd, args)
+      this_dir = File.dirname(__FILE__)
+      custom_ns_dir = File.expand_path("#{this_dir}/../../../custom_scripts/ns")
+      IO.popen([
+        "#{custom_ns_dir}/enter_ns.sh",
+        ppid,
+        cmd,
+        args].flatten) {|r|
+          outstr = r.read
+          r.close
+          abort(outstr) if $?.to_i != 0
+          return outstr
+      }
+      return nil
+    end
+
+
     private
       # Retrieves a value from superclass. If it reaches the baseclass,
       # returns default

@@ -26,8 +26,12 @@ module NginxStage
     # Accepts `user` as an option and validates user
     add_user_support
 
+
     # Block starting up PUNs for users with disabled shells
+    # This is not relevant if running in a jail
+    # We'll defer to the cluster to decide if an account is locked.
     add_hook :block_user_with_disabled_shell do
+      next if !NginxStage.pun_jail_dir.nil?
       raise InvalidUser, "user has disabled shell: #{user}" if user.shell == NginxStage.disabled_shell
     end
 
@@ -55,21 +59,43 @@ module NginxStage
       empty_directory tmp_root
     end
 
+    # Create the namespace for the user's PUN
+    # Stash the pid of the process leader so
+    # it can be used later.
+    add_hook :create_namespace do
+      next if NginxStage.pun_jail_dir.nil?
+      NginxStage.pun_jail_pid = create_namespace(user)
+      warn NginxStage.pun_jail_pid
+    end
+
     # Create the user's personal per-user NGINX `/log` location for the various
     # nginx log files (e.g., 'error.log' & 'access.log')
     add_hook :create_user_log_roots do
       empty_directory File.dirname(error_log_path)
       empty_directory File.dirname(access_log_path)
+      if !NginxStage.pun_jail_dir.nil?
+        FileUtils.touch(error_log_path)
+        FileUtils.touch(access_log_path)
+        assign_to_namespace(NginxStage.pun_jail_pid, error_log_path)
+        assign_to_namespace(NginxStage.pun_jail_pid, access_log_path)
+        enter_namespace(NginxStage.pun_jail_pid, 'mkdir', ['/root/logs'])
+        enter_namespace(NginxStage.pun_jail_pid, 'touch', ['/root/logs/access.log', '/root/logs/error.log'])
+        enter_namespace(NginxStage.pun_jail_pid, 'mount', [access_log_path, '/root/logs/access.log', '-obind,rw'])
+        enter_namespace(NginxStage.pun_jail_pid, 'mount', [error_log_path, '/root/logs/error.log', '-obind,rw'])
+        puts enter_namespace(NginxStage.pun_jail_pid, 'ls', [ '-la', '/'])
+      end
     end
 
     # Create per-user NGINX pid root
     add_hook :create_pid_root do
+      next if !NginxStage.pun_jail_dir.nil?
       empty_directory File.dirname(pid_path)
     end
 
     # Create and secure the nginx socket root. The socket file needs to be only
     # accessible by the reverse proxy user.
     add_hook :create_and_secure_socket_root do
+      next if !NginxStage.pun_jail_dir.nil?
       socket_root = File.dirname(socket_path)
       empty_directory socket_root
       FileUtils.chmod 0700, socket_root
@@ -78,6 +104,7 @@ module NginxStage
 
     # Generate per user secret_key_base file if it doesn't already exist
     add_hook :create_secret_key_base do
+      next if !NginxStage.pun_jail_dir.nil?
       begin
         secret = SecretKeyBaseFile.new(user)
         secret.generate unless secret.exist?
@@ -92,11 +119,13 @@ module NginxStage
 
     # Generate the per-user NGINX config from the 'pun.conf.erb' template
     add_hook :create_config do
+      next if !NginxStage.pun_jail_dir.nil?
       template "pun.conf.erb", config_path
     end
 
     # Run the per-user NGINX process (exit quietly on success)
     add_hook :exec_nginx do
+      next if !NginxStage.pun_jail_dir.nil?
       if !skip_nginx
         o, s = Open3.capture2e(
           NginxStage.nginx_env(user: user),
@@ -112,6 +141,7 @@ module NginxStage
 
     # If skip nginx, then output path to the generated per-user NGINX config
     add_hook :output_pun_config_path do
+      next if !NginxStage.pun_jail_dir.nil?
       puts config_path
     end
 
