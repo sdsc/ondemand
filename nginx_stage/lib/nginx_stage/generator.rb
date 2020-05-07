@@ -126,7 +126,9 @@ module NginxStage
     def create_namespace(uid)
       this_dir = File.dirname(__FILE__)
       custom_ns_dir = File.expand_path("#{this_dir}/../../../custom_scripts/ns")
-      IO.popen([
+      IO.popen(
+        NginxStage.nginx_env(user: user),
+        [
         "sudo",
         "-g", "##{user.uid}",
         "-u", "##{user.uid}",
@@ -134,8 +136,9 @@ module NginxStage
         "#{custom_ns_dir}/create_ns.sh",
         "#{NginxStage.pun_jail_dir}"]) {|r|
           ppid = r.readline.strip
+          mpid = r.readline.strip
           r.close
-          return ppid
+          return [ppid,mpid]
       } 
     end
 
@@ -150,6 +153,25 @@ module NginxStage
         "#{custom_ns_dir}/assign_to_ns.sh",
         ppid,
         target]) {|r|
+          outstr = r.read
+          r.close
+          abort(outstr) if $?.to_i != 0
+      }
+      return nil
+    end
+
+    # Bind-mount an assigned file/directory into a namespace
+    # @param mpid [Integer] PID of the unshare process for the namespace (before chroot)
+    # @param origin [String] Directory or file outside the namespace
+    # @param target [String] Directory or file inside the namespace (with pun_jail_dir as root)
+    def bind_to_namespace(mpid, origin, target)
+      this_dir = File.dirname(__FILE__)
+      custom_ns_dir = File.expand_path("#{this_dir}/../../../custom_scripts/ns")
+      IO.popen([
+        "#{custom_ns_dir}/bind_mount_ns.sh",
+        mpid,
+        origin,
+        NginxStage.pun_jail_dir + "/" + target]) {|r|
           outstr = r.read
           r.close
           abort(outstr) if $?.to_i != 0

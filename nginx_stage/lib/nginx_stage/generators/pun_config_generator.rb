@@ -64,8 +64,9 @@ module NginxStage
     # it can be used later.
     add_hook :create_namespace do
       next if NginxStage.pun_jail_dir.nil?
-      NginxStage.pun_jail_pid = create_namespace(user)
-      warn NginxStage.pun_jail_pid
+      (NginxStage.pun_jail_pid, NginxStage.pun_mount_pid) = create_namespace(user)
+      warn "Jail " + NginxStage.pun_jail_pid
+      warn "Mount" + NginxStage.pun_mount_pid
     end
 
     # Create the user's personal per-user NGINX `/log` location for the various
@@ -78,33 +79,37 @@ module NginxStage
         FileUtils.touch(access_log_path)
         assign_to_namespace(NginxStage.pun_jail_pid, error_log_path)
         assign_to_namespace(NginxStage.pun_jail_pid, access_log_path)
-        enter_namespace(NginxStage.pun_jail_pid, 'mkdir', ['/root/logs'])
-        enter_namespace(NginxStage.pun_jail_pid, 'touch', ['/root/logs/access.log', '/root/logs/error.log'])
-        enter_namespace(NginxStage.pun_jail_pid, 'mount', [access_log_path, '/root/logs/access.log', '-obind,rw'])
-        enter_namespace(NginxStage.pun_jail_pid, 'mount', [error_log_path, '/root/logs/error.log', '-obind,rw'])
-        puts enter_namespace(NginxStage.pun_jail_pid, 'ls', [ '-la', '/'])
+        bind_to_namespace(NginxStage.pun_mount_pid, error_log_path, '/root/.pun_state/logs/error.log')
+        bind_to_namespace(NginxStage.pun_mount_pid, access_log_path, '/root/.pun_state/logs/access.log')
       end
     end
 
     # Create per-user NGINX pid root
     add_hook :create_pid_root do
-      next if !NginxStage.pun_jail_dir.nil?
       empty_directory File.dirname(pid_path)
+      # if jailing, this isn't the nginx/passenger pid, it's the
+      # process leader (pid = 1) in the namespace. kill this and everything gets cleaned.
+      if !NginxStage.pun_jail_dir.nil?
+        File.write(pid_path, NginxStage.pun_jail_pid)
+      end
     end
 
     # Create and secure the nginx socket root. The socket file needs to be only
     # accessible by the reverse proxy user.
     add_hook :create_and_secure_socket_root do
-      next if !NginxStage.pun_jail_dir.nil?
       socket_root = File.dirname(socket_path)
       empty_directory socket_root
       FileUtils.chmod 0700, socket_root
       FileUtils.chown NginxStage.proxy_user, nil, socket_root if Process.uid == 0
+      if !NginxStage.pun_jail_dir.nil?
+        FileUtils.chmod 0750, socket_root
+        assign_to_namespace(NginxStage.pun_jail_pid, socket_root)
+        bind_to_namespace(NginxStage.pun_mount_pid, socket_root, '/root/.pun_state/run')
+      end
     end
 
     # Generate per user secret_key_base file if it doesn't already exist
     add_hook :create_secret_key_base do
-      next if !NginxStage.pun_jail_dir.nil?
       begin
         secret = SecretKeyBaseFile.new(user)
         secret.generate unless secret.exist?
@@ -112,15 +117,22 @@ module NginxStage
         $stderr.puts "Failed to write secret to path: #{secret.path}"
         $stderr.puts e.message
         $stderr.puts e.backtrace
-
         abort
+      end
+      if !NginxStage.pun_jail_dir.nil?
+        assign_to_namespace(NginxStage.pun_jail_pid, secret.path)
+        bind_to_namespace(NginxStage.pun_mount_pid, secret.path, '/root/.pun_state/secret_key')
       end
     end
 
     # Generate the per-user NGINX config from the 'pun.conf.erb' template
     add_hook :create_config do
-      next if !NginxStage.pun_jail_dir.nil?
-      template "pun.conf.erb", config_path
+      template "pun.conf.erb", config_path if NginxStage.pun_jail_dir.nil?
+      if !NginxStage.pun_jail_dir.nil?
+        template "pun-jailed.conf.erb", config_path
+        assign_to_namespace(NginxStage.pun_jail_pid, config_path)
+        bind_to_namespace(NginxStage.pun_mount_pid, config_path, '/root/.pun_state/pun.conf')
+      end
     end
 
     # Run the per-user NGINX process (exit quietly on success)
@@ -145,6 +157,9 @@ module NginxStage
       puts config_path
     end
 
+    add_hook :dump_ns do
+      puts enter_namespace(NginxStage.pun_jail_pid, 'find', ['/root', '-ls'])
+    end
 
     private
       # per-user NGINX config path

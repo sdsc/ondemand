@@ -25,13 +25,16 @@ SCRIPTNAME=$( basename $0 )
 # set some sane env defaults
 umask 0022
 PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
 
 ### create the new ns and run this script inside
+# note: caller should scrub the environment.
 # (think fork())
 if [[ $$ -ne 1 ]]; then
-  unshare -mU -p -f -r --mount-proc=${1}/proc chroot $1 env -i PATH=${PATH} ${SCRIPTDIR}/${SCRIPTNAME} &
+  unshare -mU -p -f -r --mount-proc=${1}/proc chroot $1 ${SCRIPTDIR}/${SCRIPTNAME} &
   MOUNTNSPID=$( jobs -p )
   pgrep -P $MOUNTNSPID
+  echo $MOUNTNSPID
   disown -ah
   1>&-
   2>&-
@@ -43,13 +46,19 @@ fi
 ### set up prelim mounts and stuff.
 mount -ttmpfs none /tmp
 mount -ttmpfs none /root
+mount -ttmpfs none /var
+mkdir /tmp/.pun_tmp
+
+# nginx won't run if this isn't present
+# even though the config file overrides the compiled-in default.
+mkdir -p /var/lib/ondemand-nginx/tmp
 
 # spinlock until the caller finishes setting up our env.
 if [[ $$ -eq 1 ]]; then
-  for I in $( seq 120 -1 1 ); do
+  for I in $( seq 3000 -1 1 ); do
     if [[ -f /tmp/release-spinlock ]]; then
       echo "RELEASE!"
-      exec sleep 30
+      exec ${SCRIPTDIR}/setpriv --no-new-privs --bounding-set -all /opt/ood/ondemand/root/sbin/nginx -c /root/.pun_state/pun.conf
     fi
     if [[ $I -le 20 ]]; then
       echo "$I tries remaining"

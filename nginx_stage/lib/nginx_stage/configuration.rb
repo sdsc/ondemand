@@ -362,6 +362,7 @@ module NginxStage
     # puns from.
     attr_accessor :pun_jail_dir
     attr_accessor :pun_jail_pid
+    attr_accessor :pun_mount_pid
     
     #
     # Configuration module
@@ -413,14 +414,14 @@ module NginxStage
       self.pun_custom_env      = {}
       self.pun_custom_env_declarations = []
       self.pun_custom_html_root = '/etc/ood/config/pun/html'
-      self.pun_config_path     = '/var/lib/ondemand-nginx/config/puns/%{user}.conf'
-      self.pun_secret_key_base_path = '/var/lib/ondemand-nginx/config/puns/%{user}.secret_key_base.txt'
+      self.pun_config_path     = '/var/tmp/ondemand-nginx-dev/_config/puns/%{user}.conf'
+      self.pun_secret_key_base_path = '/var/tmp/ondemand-nginx-dev/_config/puns/%{user}.secret_key_base.txt'
 
       self.pun_tmp_root        = '/var/tmp/ondemand-nginx-dev/%{user}'
-      self.pun_access_log_path = '/var/tmp/ondemand-nginx-dev-log/%{user}/access.log'
-      self.pun_error_log_path  = '/var/tmp/ondemand-nginx-dev-log/%{user}/error.log'
-      self.pun_pid_path        = '/var/run/ondemand-nginx/%{user}/passenger.pid'
-      self.pun_socket_path     = '/var/run/ondemand-nginx/%{user}/passenger.sock'
+      self.pun_access_log_path = '/var/tmp/ondemand-nginx-dev/_log/%{user}/access.log'
+      self.pun_error_log_path  = '/var/tmp/ondemand-nginx-dev/_log/%{user}/error.log'
+      self.pun_pid_path        = '/var/tmp/ondemand-nginx-dev/%{user}/passenger.pid'
+      self.pun_socket_path     = '/var/tmp/ondemand-nginx-dev/%{user}/passenger.sock'
       self.pun_sendfile_root   = '/'
       self.pun_sendfile_uri    = '/sendfile'
       self.pun_app_configs     = [

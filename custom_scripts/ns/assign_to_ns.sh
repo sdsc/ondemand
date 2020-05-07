@@ -78,5 +78,5 @@ if [[ $target != "${base_prefix}"* ]]; then
   exit 1
 fi
 
-chown -RPh -- $puid $target
-chmod g+wr -R -- $target
+chown -RPh -- :$pgid $target
+chmod g+wrx -R -- $target
