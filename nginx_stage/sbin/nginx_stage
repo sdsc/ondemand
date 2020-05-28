@@ -19,6 +19,7 @@ if [[ -f "${NGINX_PROFILE}" ]]; then
   source "${NGINX_PROFILE}"
 fi
 
+
 # fill in the blanks
 export X509_USER_CERT="....."
 export X509_USER_KEY="....."
@@ -32,8 +33,8 @@ export X509_USER_KEY="....."
 #{ while kill -0 $$; do sleep 5; done; touch /tmp/done; } &
 
 exec \
-  /usr/bin/env ruby \
+  nohup /usr/bin/env ruby \
     -I"${ROOT_DIR}/lib" \
     -rnginx_stage \
     -e "NginxStage::Application.start" \
-    -- "${@}"
+    -- "${@}" &>/dev/null 

@@ -32,13 +32,14 @@ export PATH
 # (think fork())
 if [[ $$ -ne 1 ]]; then
   unshare -mU -p -f -r --mount-proc=${1}/proc chroot $1 ${SCRIPTDIR}/${SCRIPTNAME} &
-  MOUNTNSPID=$( jobs -p )
+  MOUNTNSPID=''
+  while [[ -z "$MOUNTNSPID" ]]; do
+    MOUNTNSPID=$( jobs -p )
+    sleep 1
+  done;
   pgrep -P $MOUNTNSPID
   echo $MOUNTNSPID
   disown -ah
-  1>&-
-  2>&-
-  3>&-
   exit
 fi
 
@@ -46,19 +47,21 @@ fi
 ### set up prelim mounts and stuff.
 mount -ttmpfs none /tmp
 mount -ttmpfs none /root
-mount -ttmpfs none /var
+mount -ttmpfs none /var/lib/ondemand-nginx/tmp
 mkdir /tmp/.pun_tmp
+
 
 # nginx won't run if this isn't present
 # even though the config file overrides the compiled-in default.
-mkdir -p /var/lib/ondemand-nginx/tmp
+#mkdir -p /var/lib/ondemand-nginx/tmp
+# exists already.
 
 # spinlock until the caller finishes setting up our env.
 if [[ $$ -eq 1 ]]; then
   for I in $( seq 3000 -1 1 ); do
     if [[ -f /tmp/release-spinlock ]]; then
-      echo "RELEASE!"
-      exec ${SCRIPTDIR}/setpriv --no-new-privs --bounding-set -all /opt/ood/ondemand/root/sbin/nginx -c /root/.pun_state/pun.conf
+      #echo -e "RELEASED!"
+      exec ${SCRIPTDIR}/setpriv --no-new-privs --bounding-set -all /opt/ood/ondemand/root/sbin/nginx -c /root/.pun_state/pun.conf 
     fi
     if [[ $I -le 20 ]]; then
       echo "$I tries remaining"

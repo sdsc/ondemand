@@ -157,6 +157,11 @@ module NginxStage
       puts config_path
     end
 
+    add_hook :release_ns do
+      next if skip_nginx
+      enter_namespace(NginxStage.pun_jail_pid, 'touch', ['/tmp/release-spinlock'])
+    end
+
     add_hook :dump_ns do
       puts enter_namespace(NginxStage.pun_jail_pid, 'find', ['/root', '-ls'])
     end

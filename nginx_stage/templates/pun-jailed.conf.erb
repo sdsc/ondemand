@@ -7,6 +7,10 @@ worker_processes 1;  ## Default: 1
 env <%= varname %>;
 <%- end -%>
 
+# exec'd from pid=1 in the jail. we would like it to stick around
+# for more than a few milliseconds!
+daemon off;
+
 events {
   worker_connections 1024;  ## Default: 1024
 }
@@ -25,10 +29,11 @@ http {
   <%- end -%>
 
   # Set passenger security measures
-  passenger_user_switching on;
+  passenger_user_switching off;
   passenger_user root;
   passenger_group root;
   passenger_default_user root;
+  passenger_default_group root;
   passenger_load_shell_envvars off;
 
   # Kill all apps after they idle timeout
