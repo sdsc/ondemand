@@ -1,4 +1,4 @@
-user        root 'root';  ## This should be running in a unprivileged namespace, so root is okay!
+user        <%= user %> '<%= group %>';  ## Default: nobody
 error_log   /root/.pun_state/logs/error.log;
 pid         /root/.pun_state/run/passenger.pid;
 worker_processes 1;  ## Default: 1
@@ -30,10 +30,7 @@ http {
 
   # Set passenger security measures
   passenger_user_switching off;
-  passenger_user root;
-  passenger_group root;
-  passenger_default_user root;
-  passenger_default_group root;
+  passenger_default_user <%= user %>;
   passenger_load_shell_envvars off;
 
   # Kill all apps after they idle timeout

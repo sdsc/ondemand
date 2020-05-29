@@ -33,19 +33,9 @@ module NginxStage
     # @param user [String] the user name defining this object
     # @raise [InvalidUser] if user doesn't exist on local system
     def initialize(user)
-      if !NginxStage.pun_jail_dir.nil?
-        # user does not need to exist if we're jailing. choose a random uid
-        @passwd = Etc.getpwnam "nobody"
-        @group = Etc.getgrgid gid
-        @groups = get_groups
-        @passwd.uid = 9999
-        @passwd.gid = 9999
-        @passwd.name = user
-      else 
-        @passwd = Etc.getpwnam user.to_s
-        @group = Etc.getgrgid gid
-        @groups = get_groups
-      end
+      @passwd = Etc.getpwnam user.to_s
+      @group = Etc.getgrgid gid
+      @groups = get_groups
     rescue ArgumentError
       raise InvalidUser, "user doesn't exist: #{user}"
     end

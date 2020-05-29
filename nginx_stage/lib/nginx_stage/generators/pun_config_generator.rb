@@ -77,8 +77,8 @@ module NginxStage
       if !NginxStage.pun_jail_dir.nil?
         FileUtils.touch(error_log_path)
         FileUtils.touch(access_log_path)
-        assign_to_namespace(NginxStage.pun_jail_pid, error_log_path)
-        assign_to_namespace(NginxStage.pun_jail_pid, access_log_path)
+        # assign_to_namespace(NginxStage.pun_jail_pid, error_log_path)
+        # assign_to_namespace(NginxStage.pun_jail_pid, access_log_path)
         bind_to_namespace(NginxStage.pun_mount_pid, error_log_path, '/root/.pun_state/logs/error.log')
         bind_to_namespace(NginxStage.pun_mount_pid, access_log_path, '/root/.pun_state/logs/access.log')
       end
@@ -102,8 +102,8 @@ module NginxStage
       FileUtils.chmod 0700, socket_root
       FileUtils.chown NginxStage.proxy_user, nil, socket_root if Process.uid == 0
       if !NginxStage.pun_jail_dir.nil?
-        FileUtils.chmod 0750, socket_root
-        assign_to_namespace(NginxStage.pun_jail_pid, socket_root)
+        FileUtils.chmod 0770, socket_root
+        #assign_to_namespace(NginxStage.pun_jail_pid, socket_root)
         bind_to_namespace(NginxStage.pun_mount_pid, socket_root, '/root/.pun_state/run')
       end
     end
@@ -120,7 +120,7 @@ module NginxStage
         abort
       end
       if !NginxStage.pun_jail_dir.nil?
-        assign_to_namespace(NginxStage.pun_jail_pid, secret.path)
+        #assign_to_namespace(NginxStage.pun_jail_pid, secret.path)
         bind_to_namespace(NginxStage.pun_mount_pid, secret.path, '/root/.pun_state/secret_key')
       end
     end
@@ -130,7 +130,7 @@ module NginxStage
       template "pun.conf.erb", config_path if NginxStage.pun_jail_dir.nil?
       if !NginxStage.pun_jail_dir.nil?
         template "pun-jailed.conf.erb", config_path
-        assign_to_namespace(NginxStage.pun_jail_pid, config_path)
+        #assign_to_namespace(NginxStage.pun_jail_pid, config_path)
         bind_to_namespace(NginxStage.pun_mount_pid, config_path, '/root/.pun_state/pun.conf')
       end
     end

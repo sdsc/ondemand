@@ -11,13 +11,6 @@
 # all targets need to start with this
 base_prefix="/var/tmp/"
 
-# we'll need a pid for sure.
-if [[ -z ${SUDO_USER+x} && -z ${1+x} ]]; then
-  echo "Usage: $0 <ppid in ns> <directory-or-file>" 1>&2
-  exit 1
-fi
-
-# we'll need just a numeric uid
 if [[ ! ( "$1" =~ ^[0-9]+$ )]]; then
   echo "ppid $1 does not look like a pid" 1>&2
   exit 1
@@ -29,15 +22,10 @@ shift
 target=$1
 shift
 
-# just in case the aller did a '*'
+# just in case the caller did a '*'
 if [[ ! -z ${1+x} ]]; then
   echo "Found unexpected extra arguments." 1>&2
   exit 1
-fi
-
-# this does need sudo, and we can take care of that now.
-if [[ -z ${SUDO_USER+x} ]]; then
-  exec sudo $( cd $( dirname $0 ); pwd )/$( basename $0 ) $ppid $target
 fi
 
 puid=$( ps -o uid --no-headers -p $ppid | sed -e 's/ //' )

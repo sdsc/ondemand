@@ -129,12 +129,11 @@ module NginxStage
       IO.popen(
         NginxStage.nginx_env(user: user),
         [
-        "sudo",
-        "-g", "##{user.uid}",
-        "-u", "##{user.uid}",
-        "--",
         "#{custom_ns_dir}/create_ns.sh",
-        "#{NginxStage.pun_jail_dir}"]) {|r|
+        "#{NginxStage.pun_jail_dir}",
+        "#{user.name}",
+        "#{user.uid}"
+        ]) {|r|
           ppid = r.readline.strip
           mpid = r.readline.strip
           r.close
