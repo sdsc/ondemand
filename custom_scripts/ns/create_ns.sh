@@ -36,7 +36,7 @@ umask 0022
 # note: caller should scrub the environment.
 # (think fork())
 if [[ $$ -ne 1 ]]; then
-  unshare -m -p -f --mount-proc=${1}/proc ${SCRIPTDIR}/${SCRIPTNAME} "$@" domount &
+  nohup unshare -m -p -f --mount-proc=${1}/proc ${SCRIPTDIR}/${SCRIPTNAME} "$@" domount &>/dev/null &
   MOUNTNSPID=''
   while [[ -z "$MOUNTNSPID" ]]; do
     MOUNTNSPID=$( jobs -p )

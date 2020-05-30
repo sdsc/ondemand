@@ -80,8 +80,8 @@ module NginxStage
     add_hook :create_namespace do
       next if NginxStage.pun_jail_dir.nil?
       (NginxStage.pun_jail_pid, NginxStage.pun_mount_pid) = create_namespace(user)
-      warn "Jail " + NginxStage.pun_jail_pid
-      warn "Mount" + NginxStage.pun_mount_pid
+      #warn "Jail " + NginxStage.pun_jail_pid
+      #warn "Mount" + NginxStage.pun_mount_pid
     end
 
     # Create the user's personal per-user NGINX `/log` location for the various
@@ -174,19 +174,19 @@ module NginxStage
     end
 
     # If skip nginx, then output path to the generated per-user NGINX config
-    add_hook :output_pun_config_path do
-      next if !NginxStage.pun_jail_dir.nil?
-      puts config_path
-    end
+    #add_hook :output_pun_config_path do
+    #  next if !NginxStage.pun_jail_dir.nil?
+    #  puts config_path
+    #end
 
     add_hook :release_ns do
       next if skip_nginx
       enter_namespace(NginxStage.pun_jail_pid, 'touch', ['/tmp/release-spinlock'])
     end
 
-    add_hook :dump_ns do
-      puts enter_namespace(NginxStage.pun_jail_pid, 'find', ['/root', '-ls'])
-    end
+    #add_hook :dump_ns do
+    #  puts enter_namespace(NginxStage.pun_jail_pid, 'find', ['/root', '-ls'])
+    #end
 
     private
       # per-user NGINX config path
