@@ -53,6 +53,21 @@ module NginxStage
       }
     end
 
+    # @!method oidc_token_filename
+    #   The oidc_token_filename is used to retrieve a myproxy / gsi cert
+    #   for ssh authentication.
+    #   @return [String] OIDC token filename with token in first line of file
+    add_option :oidc_token_filename do
+      {
+        opt_args: ["-t", "--oidc-token-file=OIDC_TOKEN_FILE", "# Optional OIDC token filename with token in first line of file"],
+        default: nil,
+        before_init: -> (tfn) do
+            tfn
+        end
+
+      }
+    end
+
     # Create the user's personal per-user NGINX `/tmp` location for the various
     # nginx cache directories
     add_hook :create_user_tmp_root do
@@ -123,6 +138,13 @@ module NginxStage
         #assign_to_namespace(NginxStage.pun_jail_pid, secret.path)
         bind_to_namespace(NginxStage.pun_mount_pid, secret.path, '/root/.pun_state/secret_key')
       end
+    end
+
+    # Fetch myproxy cert
+    add_hook :myproxy_via_oidc_token do
+      next if oidc_token_filename.nil?
+      # $stderr.puts "oidc_token_filename: #{oidc_token_filename}"
+      fetch_myproxy_cert(user, NginxStage.pun_mount_pid, oidc_token_filename)
     end
 
     # Generate the per-user NGINX config from the 'pun.conf.erb' template

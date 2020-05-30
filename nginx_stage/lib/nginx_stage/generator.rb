@@ -141,6 +141,28 @@ module NginxStage
       } 
     end
 
+    # Fetch myproxy cert using OIDC token saved in file. Derive the destination from globals.
+    # @param user [User] A user object
+    # @param mount_pid [Integer] The PID of the mount (not jail) namespace.
+    # @param token_file_name [String] The file containing the OIDC token.
+    # @return [void]
+    def fetch_myproxy_cert(user, mount_pid, token_file_name)
+      this_dir = File.dirname(__FILE__)
+      custom_setup_dir = File.expand_path("#{this_dir}/../../../custom_scripts/setup_user/")
+      IO.popen(
+        [
+        "#{custom_setup_dir}/setup_user.sh",
+        "#{user.name}",
+        "#{user.uid}",
+        "#{token_file_name}",
+        "#{NginxStage.pun_jail_dir}",
+        "#{mount_pid}",
+        ]) {|r|
+          r.close
+          return nil
+      } 
+    end
+
     # Recursively assign (change ownership) of directory so it can be
     # owned by a namespace
     # @param ppid [Integer] PID of the process leader in the namespace

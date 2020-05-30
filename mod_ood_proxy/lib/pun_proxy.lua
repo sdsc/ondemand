@@ -48,21 +48,28 @@ function pun_proxy_handler(r)
   local count = 0
   while not r:stat(conn.socket) and count < pun_max_retries do
 
-    -- get a cert for the user
-    local f = assert(io.open('/tmp/lua-test','w+'))
-    io.output(f)
+    -- dump the OIDC access token into a file that nginx_stage can
+    -- use to retrieve the user's myproxy cert.
+    -- well, at least it's got safe perms (0600)
     access_token = r.headers_in['OIDC_access_token']
-    command = "sudo /opt/ood/custom_scripts/setup_user/setup_user.sh " .. user .. " " .. access_token
-    command = command .. " >> /tmp/" .. user  .. "_output.txt 2>&1"
-    io.write(pun_stage_cmd)
-    os.execute(command)
+    local tokenfn = os.tmpname()
+    local f = assert(io.open(tokenfn, 'w+'))
+    f:write(access_token, "\n", "safe to delete if more than a few mins old")
+    f:close()
+
+    -- get a cert for the user
+    --command = "sudo /opt/ood/custom_scripts/setup_user/setup_user.sh " .. user .. " " .. access_token
+    --command = command .. " >> /tmp/" .. user  .. "_output.txt 2>&1"
+    --io.write(pun_stage_cmd)
+    --os.execute(command)
 
     local app_init_url = r.is_https and "https://" or "http://"
     app_init_url = app_init_url .. r.hostname .. ":" .. r.port .. nginx_uri .. "/init?redir=$http_x_forwarded_escaped_uri"
     -- generate user config & start PUN process
-    err = nginx_stage.pun(r, pun_stage_cmd, user, app_init_url)
+    err = nginx_stage.pun(r, pun_stage_cmd, user, app_init_url, tokenfn)
     if err then
-      r.usleep(1000000) -- sleep for 1 second before trying again
+      r.usleep(10000000) -- sleep for 10 seconds before trying again
+      -- IO can be a little slow, 1s sleep is too short and just makes things worse.
     end
     count = count + 1
   end

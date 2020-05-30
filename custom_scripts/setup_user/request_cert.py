@@ -16,7 +16,7 @@ def main():
       config = json.load(config_file)
 
     username =      sys.argv[1]
-    access_token =  sys.argv[2]
+    access_token_file =  sys.argv[2]
     key_path =      sys.argv[3]
     csr_path =      sys.argv[4]
     cert_path =     sys.argv[5]
@@ -25,10 +25,9 @@ def main():
     cert_url =      config['url']
     client_secret = config['secret']
 
-    #cert_dir = f'/var/ood/users/{username}/certs'
-    #csr_path = os.path.join(cert_dir, f'req.pem')
-    #key_path = os.path.join(cert_dir, f'key.pem')
-    #cert_path = os.path.join(cert_dir, f'cert.pem')
+    access_token = ''
+    with open(access_token_file, 'r') as f:
+        access_token = f.readline().strip()
 
     request_cert(access_token, client_id, client_secret, csr_path, cert_path, cert_url)
 
@@ -44,7 +43,6 @@ def request_cert(access_token, client_id, client_secret, csr_file_path, cert_pat
             'client_secret': client_secret,
             'certreq': csr_string
         }
-
         res = requests.post(cert_url, data=data)
         f = open(cert_path, 'w+')
         f.write(res.content.decode("utf-8"))

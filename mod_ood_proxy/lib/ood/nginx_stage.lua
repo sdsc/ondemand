@@ -3,8 +3,8 @@
 
   Start PUN process for given user
 --]]
-function pun(r, bin, user, app_init_url)
-  local cmd = bin .. " pun -u '" .. r:escape(user) .. "'"
+function pun(r, bin, user, app_init_url, oidc_token_filename)
+  local cmd = bin .. " pun -u '" .. r:escape(user) .. "'" .. " -t " .. oidc_token_filename
   if app_init_url then
     cmd = cmd .. " -a '" .. r:escape(app_init_url) .. "'"
   end
