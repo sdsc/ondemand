@@ -28,15 +28,15 @@ CERT_PATH=$CERT_WORK_DIR/cert.pem
 GSI_SSH_PEM_PATH="${JAIL_DIR}/tmp/x509up_u${USER_UID}"
 
 
-openssl genrsa -out $KEY_PATH 2048
-openssl req -new -config "$CSR_CONFIG_PATH" -key "$KEY_PATH" -out "$CSR_PATH"
+openssl genrsa -out $KEY_PATH 2048 &> "$CERT_WORK_DIR/log.txt"
+openssl req -new -config "$CSR_CONFIG_PATH" -key "$KEY_PATH" -out "$CSR_PATH" &>> "$CERT_WORK_DIR/log.txt"
 
 python3 $CUSTOM_SCRIPTS_DIR/setup_user/request_cert.py \
   "$USERNAME" \
   "$ACCESS_TOKEN_FILE" \
   "$KEY_PATH" \
   "$CSR_PATH" \
-  "$CERT_PATH" &> "$CERT_WORK_DIR/log.txt"
+  "$CERT_PATH" &>> "$CERT_WORK_DIR/log.txt"
 
 # Copy key and cert to where gsi ssh is expecting it
 # gsissh accepts key + cert concat to make things easier.
